@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>RTCNode</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha256-MfvZlkHCEqatNoGiOXveE8FIwMzZg4W85qfrfIFBfYc= sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ=="
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+</head>
+<style>
+    body {
+        background: grey;
+
+    }
+
+    #container {
+        width: 700px;
+        margin: 0 auto;
+    }
+
+    #chatWindow {
+        height: 100%;
+    }
+
+    #mainWrapper {
+        display: none;
+    }
+
+    #chatWindow {
+        float: left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px;
+
+    }
+
+    #userWrapper {
+        float: left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px;
+        margin-left: 20px;
+        width: 150px;
+        height: 100%;
+
+    }
+
+    #namesWrapper {
+
+        float: left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px;
+        margin-left: 20px;
+        /*display: none;*/
+    }
+
+    /*input {*/
+    /*height: 30px;*/
+    /*}*/
+</style>
+
+<body>
+
+<div id="container">
+    <div id="namesWrapper" class="panel panel-primary">
+        <div class="panel-heading" align="center">
+            <h2>RTCNode</h2>
+
+
+        </div>
+        <p>Create Username:</p>
+
+        <form id="usernameForm">
+            <input size="35" id="username">
+            <button type="submit" class="btn btn-primary" value="Submit">
+                <span class="glyphicon glyphicon-send"></span> submit
+            </button>
+            <!--<input class="btn btn-warning" type="submit" >-->
+        </form>
+    </div>
+    <div id="mainWrapper" class="panel panel-primary">
+        <div class="panel-heading" align="center">
+            <h2>RTCNode</h2>
+        </div>
+        <div id="chatWrapper">
+            <div id="chatWindow" class="panel-body-success">
+                <form id="messageForm" class="panel-footer">
+                    <input size="35" id="message" placeholder="Type Something...">
+                    <!--<input class="btn btn-success glyphicon glyphicon-send pull-bottom" type="submit" value="Send">-->
+                    <button type="submit" class="btn btn-primary">
+                        <span class="glyphicon glyphicon-send"></span>
+                    </button>
+
+                </form>
+            </div>
+
+            <div id="userWrapper">
+                <h3>Users</h3>
+
+                <div id="users"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-2.1.4.js">
+</script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"
+        integrity="sha256-Sk3nkD6mLTMOF0EOpNtsIry+s1CsaqQC1rVLTAy+0yc= sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ=="
+        crossorigin="anonymous"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    $(function () {
+        var socket = io.connect();
+        var $messageForm = $('#messageForm');
+        var $message = $('#message');
+        var $chat = $('#chatWindow');
+        var $usernameForm = $('#usernameForm');
+        var $users = $('#users');
+        var $username = $('#username');
+        var $error = $('#error');
+        var colors = ['red', 'green', 'blue', 'orange', 'yellow'];
+        var $userColor = {};
+
+
+        $usernameForm.submit(function (e) {
+            e.preventDefault();
+            socket.emit('new user', $username.val(), function (data) {
+                if (data) {
+                    console.log(data.toString());
+                    $('#namesWrapper').hide();
+                    $('#mainWrapper').show();
+                } else {
+                    $error.html('Username is already taken');
+
+                }
+            });
+            $username.val('');
+        });
+
+        socket.on('usernames', function (data, color) {
+            console.log("usercolors" + JSON.stringify(color));
+            var html = '';
+            for (i = 0; i < data.length; i++) {
+                username = data[i];
+                html += '<h><font color=' + JSON.stringify(color[username]) + '>' + username + '</font></h><br>';
+
+            }
+            $users.html(html);
+        });
+
+        $messageForm.submit(function (e) {
+            e.preventDefault();
+            console.log("event = " + e.toString());
+            socket.emit('send message', $message.val());
+            $message.val('');
+        });
+        socket.on('new message', function (data) {
+            var userColor = data.color;
+            var colorId = userColor[data.user];
+            //  console.log('<strong> <font color=' + colorId + '>' + colorId + data.user + '</strong>: ' + data.msg + '<br>');
+            $chat.append('<strong> <font color=' + colorId + '>' + data.user + '</font></strong>: ' + data.msg + '</font><br>');
+        });
+    });
+</script>
+</body>
+</html>
